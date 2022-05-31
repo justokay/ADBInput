@@ -4,14 +4,24 @@ import java.io.InputStreamReader
 import kotlin.streams.toList
 
 object ADB {
-    fun executeCommand(event: KeyEvent) {
-        val builder = ProcessBuilder(
-            "adb", "devices"
-        )
-        builder.redirectErrorStream(true)
+    fun executeCommand(event: KeyEvent, deviceId: String) {
+        val command = if (deviceId.isNotEmpty()) {
+            listOf(
+                "adb", "-s", deviceId, "shell", "input", "keyevent", event.name
+            )
+        } else {
+            listOf(
+                "adb", "shell", "input", "keyevent", event.name
+            )
+        }
 
-        val p = builder.start()
-        InputStreamReader(p.inputStream).buffered().lines().forEach {
+        println(command)
+
+        val process = ProcessBuilder(command).apply {
+            redirectErrorStream(true)
+        }.start()
+
+        InputStreamReader(process.inputStream).buffered().lines().forEach {
             println(">> $it")
         }
     }
@@ -28,7 +38,7 @@ object ADB {
             list.subList(1, list.lastIndex).filter { it.trim().isNotEmpty() }.map {
                 it.split("\t").first()
             }.let {
-                println(it)
+//                println(it)
                 Devices.Connected(it)
             }
         } else Devices.Empty

@@ -7,3 +7,5 @@ sealed class Devices {
 
     data class Error(val message: String) : Devices()
 }
+
+data class DeviceID(val id: String)

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import data.DeviceID
 import data.Devices
 import data.KeyEvent
 import data.events
@@ -40,17 +41,21 @@ fun App() {
             Row(
                 modifier = Modifier.fillMaxWidth()
             ) {
+                var currentDeviceID by remember { mutableStateOf("") }
+
                 EventList { event ->
-                    ADB.executeCommand(event)
+                    ADB.executeCommand(event, currentDeviceID)
                 }
-                AdbDevices()
+                AdbDevices {
+                    currentDeviceID = it
+                }
             }
         }
     }
 }
 
 @Composable
-fun AdbDevices() {
+fun AdbDevices(onDeviceSelected: (String) -> Unit) {
     val coroutines = rememberCoroutineScope()
     var devices by remember { mutableStateOf<Devices>(Devices.Empty) }
 
@@ -69,14 +74,14 @@ fun AdbDevices() {
 
     when (devices) {
         is Devices.Connected -> {
-            DeviceSelector((devices as Devices.Connected).list)
+            DeviceSelector((devices as Devices.Connected).list, onDeviceSelected)
         }
         Devices.Empty -> Text("There is no any adb connected devices")
         is Devices.Error -> Text((devices as Devices.Error).message)
     }
 }
 @Composable
-fun DeviceSelector(devices: List<String>) {
+fun DeviceSelector(devices: List<String>, onDeviceSelected: (String) -> Unit) {
     var currentDevice by remember { mutableStateOf(devices.first()) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -103,6 +108,7 @@ fun DeviceSelector(devices: List<String>) {
                         onClick = {
                             currentDevice = selectionOption
                             expanded = false
+                            onDeviceSelected(currentDevice)
                         }
                     ) {
                         Text(text = selectionOption)
