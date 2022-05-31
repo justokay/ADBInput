@@ -1,14 +1,15 @@
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.List
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,8 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import data.Devices
 import data.KeyEvent
 import data.events
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -28,26 +34,82 @@ import java.io.InputStreamReader
 @Preview
 fun App() {
     MaterialTheme {
-        EventList { event ->
-            executeCommand(event)
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                EventList { event ->
+                    ADB.executeCommand(event)
+                }
+                AdbDevices()
+            }
         }
     }
 }
 
-fun executeCommand(event: KeyEvent) {
-    val builder = ProcessBuilder(
-        "adb", "devices"
-    )
-    builder.redirectErrorStream(true)
-    val p = builder.start()
-    val r = BufferedReader(InputStreamReader(p.inputStream))
-    var line: String?
-    while (true) {
-        line = r.readLine()
-        if (line == null) {
-            break
+@Composable
+fun AdbDevices() {
+    val coroutines = rememberCoroutineScope()
+    var devices by remember { mutableStateOf<Devices>(Devices.Empty) }
+
+    DisposableEffect(Unit) {
+        coroutines.launch {
+            while (true) {
+                delay(1000)
+                devices = ADB.getDevices()
+            }
         }
-        println(line)
+
+        onDispose {
+
+        }
+    }
+
+    when (devices) {
+        is Devices.Connected -> {
+            DeviceSelector((devices as Devices.Connected).list)
+        }
+        Devices.Empty -> Text("There is no any adb connected devices")
+        is Devices.Error -> Text((devices as Devices.Error).message)
+    }
+}
+@Composable
+fun DeviceSelector(devices: List<String>) {
+    var currentDevice by remember { mutableStateOf(devices.first()) }
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        Row(
+            modifier = Modifier.clickable {
+                expanded = true
+            }
+        ) {
+            Text(currentDevice)
+            if (devices.size > 1) {
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+        }
+        if (devices.size > 1) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {
+                    expanded = false
+                }
+            ) {
+                devices.forEach { selectionOption ->
+                    DropdownMenuItem(
+                        onClick = {
+                            currentDevice = selectionOption
+                            expanded = false
+                        }
+                    ) {
+                        Text(text = selectionOption)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -57,48 +119,57 @@ fun EventList(onClick: (KeyEvent) -> Unit) {
     val allEvents by remember { mutableStateOf(events) }
     var filteredList by remember { mutableStateOf(allEvents) }
 
-    var fieldValue by remember { mutableStateOf(filteredList.firstOrNull()?.name ?: "") }
+    var fieldValue by remember { mutableStateOf("") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.width(200.dp)
-        ) {
-            TextField(
-                fieldValue,
-                onValueChange = { value ->
-                    filteredList = if (value.isEmpty()) {
-                        allEvents
-                    } else {
-                        allEvents.filter {
-                            val lowercase = value.lowercase()
-                            lowercase in it.name.lowercase() || lowercase in it.code.toString()
-                        }
-                    }
-                    fieldValue = value
-                },
-                maxLines = 1
-            )
-
-            LazyColumn(
-                modifier = Modifier.padding(top = 20.dp).fillMaxSize(),
-            ) {
-                items(filteredList, key = { item -> item.code }) { event ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable {
-                                onClick(event)
-                            }
-                            .padding(horizontal = 20.dp, vertical = 20.dp)
-                            .animateItemPlacement()
-                    ) {
-                        Text(
-                            "${event.name} (${event.code})",
-                            style = TextStyle(color = Color.Gray, fontSize = 16.sp, fontWeight = FontWeight.W500),
-                        )
-                        Divider(color = Color.Black, thickness = 1.dp)
+    Column(
+        modifier = Modifier.width(240.dp)
+    ) {
+        TextField(
+            fieldValue,
+            placeholder = {
+                Text("filter")
+            },
+            onValueChange = { value ->
+                filteredList = if (value.isEmpty()) {
+                    allEvents
+                } else {
+                    allEvents.filter {
+                        val lowercase = value.lowercase()
+                        lowercase in it.name.lowercase() || lowercase in it.code.toString()
                     }
                 }
+                fieldValue = value
+            },
+            maxLines = 1
+        )
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(filteredList, key = { item -> item.code }) { event ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable {
+                            onClick(event)
+                        }
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
+                        .animateItemPlacement()
+                ) {
+                    Text(
+                        event.name,
+                        style = TextStyle(color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.W500),
+                    )
+                    Text(
+                        event.code.toString(),
+                        style = TextStyle(
+                            color = Color(0xff2c2c2c),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.W400
+                        ),
+                    )
+                }
+                Divider(color = Color.Black, thickness = 1.dp)
             }
         }
     }
