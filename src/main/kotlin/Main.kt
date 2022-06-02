@@ -1,34 +1,31 @@
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import data.DeviceID
+import androidx.compose.ui.window.rememberWindowState
 import data.Devices
 import data.KeyEvent
 import data.events
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 
 @Composable
@@ -46,8 +43,53 @@ fun App() {
                 EventList { event ->
                     ADB.executeCommand(event, currentDeviceID)
                 }
-                AdbDevices {
-                    currentDeviceID = it
+                Box(
+                    modifier = Modifier.fillMaxHeight().width(1.dp).background(color = Color.Black)
+                )
+                Content(
+                    onDeviceSelected = {
+                        currentDeviceID = it
+                    },
+                    onSendText = {
+                        ADB.sendText(it, currentDeviceID)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun Content(onDeviceSelected: (String) -> Unit, onSendText: (String) -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(10.dp)
+    ) {
+        Column {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                DeviceSelector(onDeviceSelected)
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                var text by remember { mutableStateOf("") }
+
+                OutlinedTextField(text, onValueChange = { text = it }, modifier = Modifier.height(300.dp).fillMaxWidth())
+                Row {
+                    Button(onClick = {
+                        text = ""
+                    }) {
+                        Text("clear")
+                    }
+                    Spacer(modifier = Modifier.width(20.dp))
+                    Button(onClick = {
+                        onSendText(text)
+                    }) {
+                        Text("send")
+                    }
                 }
             }
         }
@@ -55,20 +97,16 @@ fun App() {
 }
 
 @Composable
-fun AdbDevices(onDeviceSelected: (String) -> Unit) {
+private fun DeviceSelector(onDeviceSelected: (String) -> Unit) {
     val coroutines = rememberCoroutineScope()
     var devices by remember { mutableStateOf<Devices>(Devices.Empty) }
 
-    DisposableEffect(Unit) {
+    LaunchedEffect(Unit) {
         coroutines.launch {
             while (true) {
                 delay(1000)
                 devices = ADB.getDevices()
             }
-        }
-
-        onDispose {
-
         }
     }
 
@@ -80,6 +118,7 @@ fun AdbDevices(onDeviceSelected: (String) -> Unit) {
         is Devices.Error -> Text((devices as Devices.Error).message)
     }
 }
+
 @Composable
 fun DeviceSelector(devices: List<String>, onDeviceSelected: (String) -> Unit) {
     var currentDevice by remember { mutableStateOf(devices.firstOrNull() ?: "There is no connected devices") }
@@ -130,10 +169,10 @@ fun EventList(onClick: (KeyEvent) -> Unit) {
     Column(
         modifier = Modifier.width(240.dp)
     ) {
-        TextField(
+        OutlinedTextField(
             fieldValue,
             placeholder = {
-                Text("filter")
+                Text("filter code here", style = TextStyle(Color(0xffbbbbbb)))
             },
             onValueChange = { value ->
                 filteredList = if (value.isEmpty()) {
@@ -159,17 +198,17 @@ fun EventList(onClick: (KeyEvent) -> Unit) {
                         .clickable {
                             onClick(event)
                         }
-                        .padding(horizontal = 20.dp, vertical = 20.dp)
+                        .padding(horizontal = 5.dp, vertical = 5.dp)
                         .animateItemPlacement()
                 ) {
                     Text(
                         event.name,
-                        style = TextStyle(color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.W500),
+                        style = TextStyle(color = Color(0xff2c2c2c), fontSize = 14.sp, fontWeight = FontWeight.W500),
                     )
                     Text(
                         event.code.toString(),
                         style = TextStyle(
-                            color = Color(0xff2c2c2c),
+                            color = Color(0xffbbbbbb),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.W400
                         ),
@@ -182,7 +221,15 @@ fun EventList(onClick: (KeyEvent) -> Unit) {
 }
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
+    val state = rememberWindowState(
+        size = DpSize(600.dp, 600.dp)
+    )
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "Android Debug Bridge Input",
+        icon = rememberVectorPainter(Icons.Default.Build),
+        state = state
+    ) {
         App()
     }
 }

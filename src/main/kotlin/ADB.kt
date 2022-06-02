@@ -38,10 +38,13 @@ object ADB {
             list.subList(1, list.lastIndex).filter { it.trim().isNotEmpty() }.map {
                 it.split("\t").first()
             }.let {
-//                println(it)
                 Devices.Connected(it)
             }
         } else Devices.Empty
+    }
+
+    fun sendText(text: String, currentDeviceID: String) {
+        TODO("Not yet implemented")
     }
 
 }
