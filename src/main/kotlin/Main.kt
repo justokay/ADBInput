@@ -82,7 +82,7 @@ fun AdbDevices(onDeviceSelected: (String) -> Unit) {
 }
 @Composable
 fun DeviceSelector(devices: List<String>, onDeviceSelected: (String) -> Unit) {
-    var currentDevice by remember { mutableStateOf(devices.first()) }
+    var currentDevice by remember { mutableStateOf(devices.firstOrNull() ?: "There is no connected devices") }
     var expanded by remember { mutableStateOf(false) }
 
     Box {

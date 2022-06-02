@@ -1157,8 +1157,4 @@ val events = listOf(
         name = "KEYCODE_ZOOM_OUT",
         code = 169
     ),
-    KeyEvent(
-        name = "MAX_KEYCODE",
-        code = 84
-    ),
 )
