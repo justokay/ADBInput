@@ -18,9 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
-import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.*
 import data.Devices
 import data.KeyEvent
 import data.events
@@ -77,7 +75,11 @@ fun Content(onDeviceSelected: (String) -> Unit, onSendText: (String) -> Unit) {
             ) {
                 var text by remember { mutableStateOf("") }
 
-                OutlinedTextField(text, onValueChange = { text = it }, modifier = Modifier.height(300.dp).fillMaxWidth())
+                OutlinedTextField(
+                    text,
+                    onValueChange = { text = it },
+                    modifier = Modifier.height(300.dp).fillMaxWidth()
+                )
                 Row {
                     Button(onClick = {
                         text = ""
@@ -220,7 +222,37 @@ fun EventList(onClick: (KeyEvent) -> Unit) {
     }
 }
 
+sealed class AppWindow {
+    object Main : AppWindow()
+    object Devices : AppWindow()
+}
+
+data class AppState(
+    val windows: MutableList<AppWindow>
+)
+
+@Composable
+fun rememberAppState() = remember {
+    AppState(
+        windows = mutableListOf(
+            AppWindow.Main
+        )
+    )
+}
+
 fun main() = application {
+    val appState = rememberAppState()
+
+    appState.windows.forEach {
+        when (it) {
+            AppWindow.Devices -> EmulatorsWindos(appState)
+            AppWindow.Main -> AppWindow(appState)
+        }
+    }
+}
+
+@Composable
+fun ApplicationScope.AppWindow(appState: AppState) {
     val state = rememberWindowState(
         size = DpSize(600.dp, 600.dp)
     )
@@ -230,6 +262,29 @@ fun main() = application {
         icon = rememberVectorPainter(Icons.Default.Build),
         state = state
     ) {
+        MenuBar {
+            Menu("File") {
+                Item("Emulators") {
+                    appState.windows.add(
+                        AppWindow.Devices
+                    )
+                }
+            }
+        }
         App()
+    }
+}
+
+@Composable
+fun EmulatorsWindos(appState: AppState) {
+    val state = rememberWindowState(
+        size = DpSize(400.dp, 400.dp)
+    )
+    Window(title = "Emuliators", state = state, onCloseRequest = {
+        appState.windows.removeLast()
+    }) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+
+        }
     }
 }
