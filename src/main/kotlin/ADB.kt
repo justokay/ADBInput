@@ -1,5 +1,6 @@
 import data.Devices
 import data.KeyEvent
+import org.json.JSONObject
 import java.io.InputStreamReader
 import kotlin.streams.toList
 
@@ -45,6 +46,16 @@ object ADB {
 
     fun sendText(text: String, currentDeviceID: String) {
         TODO("Not yet implemented")
+    }
+
+    enum class Type(val value: String) {
+        DYNAMIC("Dynamic"), RECOMMENDATION("Recommendation"), LIST("List")
+    }
+
+    fun test() {
+        JSONObject().apply {
+
+        }
     }
 
 }

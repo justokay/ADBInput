@@ -18,6 +18,8 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    // https://mvnrepository.com/artifact/org.json/json
+    implementation("org.json:json:20090211")
 }
 
 tasks.withType<KotlinCompile> {
