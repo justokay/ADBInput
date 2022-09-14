@@ -16,15 +16,7 @@ object ADB {
             )
         }
 
-        println(command)
-
-        val process = ProcessBuilder(command).apply {
-            redirectErrorStream(true)
-        }.start()
-
-        InputStreamReader(process.inputStream).buffered().lines().forEach {
-            println(">> $it")
-        }
+        executeCommand(command)
     }
 
     fun getDevices(): Devices {
@@ -44,8 +36,30 @@ object ADB {
         } else Devices.Empty
     }
 
-    fun sendText(text: String, currentDeviceID: String) {
-        TODO("Not yet implemented")
+    fun sendText(text: String, deviceId: String) {
+        val command = if (deviceId.isNotEmpty()) {
+            listOf(
+                "adb", "-s", deviceId, "shell", "input", "text", text
+            )
+        } else {
+            listOf(
+                "adb", "shell", "input", "text", text
+            )
+        }
+
+        executeCommand(command)
+    }
+
+    private fun executeCommand(command: List<String>) {
+        println(command)
+
+        val process = ProcessBuilder(command).apply {
+            redirectErrorStream(true)
+        }.start()
+
+        InputStreamReader(process.inputStream).buffered().lines().forEach {
+            println(">> $it")
+        }
     }
 
     enum class Type(val value: String) {
