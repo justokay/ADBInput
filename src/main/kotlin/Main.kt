@@ -6,8 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,17 +19,24 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
+import data.DPadInput
 import data.Devices
 import data.KeyEvent
 import data.events
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import utils.toCommand
 
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
+
+        LaunchedEffect(Unit) {
+
+        }
+
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -50,6 +57,9 @@ fun App() {
                     },
                     onSendText = {
                         ADB.sendText(it, currentDeviceID)
+                    },
+                    onDPadClick = {
+                        ADB.executeCommand(it.toCommand(), currentDeviceID)
                     }
                 )
             }
@@ -58,7 +68,11 @@ fun App() {
 }
 
 @Composable
-fun Content(onDeviceSelected: (String) -> Unit, onSendText: (String) -> Unit) {
+fun Content(
+    onDeviceSelected: (String) -> Unit,
+    onSendText: (String) -> Unit,
+    onDPadClick: (DPadInput) -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxSize().padding(10.dp)
     ) {
@@ -94,6 +108,40 @@ fun Content(onDeviceSelected: (String) -> Unit, onSendText: (String) -> Unit) {
                     }
                 }
             }
+            DPadControl(onDPadClick)
+        }
+    }
+}
+
+@Composable
+fun DPadControl(onClick: (DPadInput) -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.height(200.dp)) {
+        Button(onClick = {
+            onClick(DPadInput.UP)
+        }) {
+            Icon(Icons.Default.KeyboardArrowUp, null)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Button(onClick = {
+                onClick(DPadInput.LEFT)
+            }) {
+                Icon(Icons.Default.KeyboardArrowLeft, null)
+            }
+            Button(onClick = {
+                onClick(DPadInput.UP)
+            }) {
+                Icon(Icons.Rounded.AddCircle, null)
+            }
+            Button(onClick = {
+                onClick(DPadInput.RIGHT)
+            }) {
+                Icon(Icons.Default.KeyboardArrowRight, null)
+            }
+        }
+        Button(onClick = {
+            onClick(DPadInput.DOWN)
+        }) {
+            Icon(Icons.Default.KeyboardArrowDown, null)
         }
     }
 }
@@ -116,6 +164,7 @@ private fun DeviceSelector(onDeviceSelected: (String) -> Unit) {
         is Devices.Connected -> {
             DeviceSelector((devices as Devices.Connected).list, onDeviceSelected)
         }
+
         Devices.Empty -> Text("There is no any adb connected devices")
         is Devices.Error -> Text((devices as Devices.Error).message)
     }
@@ -169,7 +218,7 @@ fun EventList(onClick: (KeyEvent) -> Unit) {
     var fieldValue by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.width(240.dp)
+        modifier = Modifier.width(250.dp)
     ) {
         OutlinedTextField(
             fieldValue,
