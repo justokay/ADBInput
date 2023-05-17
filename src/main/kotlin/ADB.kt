@@ -66,20 +66,20 @@ object ADB {
         DYNAMIC("Dynamic"), RECOMMENDATION("Recommendation"), LIST("List")
     }
 
-    fun test() {
-        JSONObject().apply {
-
-        }
-    }
-
-    enum class Type(val value: String) {
-        DYNAMIC("Dynamic"), RECOMMENDATION("Recommendation"), LIST("List")
-    }
-
-    fun test() {
-        JSONObject().apply {
-
-        }
-    }
+//    fun test() {
+//        JSONObject().apply {
+//
+//        }
+//    }
+//
+//    enum class Type(val value: String) {
+//        DYNAMIC("Dynamic"), RECOMMENDATION("Recommendation"), LIST("List")
+//    }
+//
+//    fun test() {
+//        JSONObject().apply {
+//
+//        }
+//    }
 
 }
