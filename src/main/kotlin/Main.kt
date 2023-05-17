@@ -128,7 +128,7 @@ fun DPadControl(onClick: (DPadInput) -> Unit) {
                 Icon(Icons.Default.KeyboardArrowLeft, null)
             }
             Button(onClick = {
-                onClick(DPadInput.UP)
+                onClick(DPadInput.CENTER)
             }) {
                 Icon(Icons.Rounded.AddCircle, null)
             }
@@ -138,10 +138,19 @@ fun DPadControl(onClick: (DPadInput) -> Unit) {
                 Icon(Icons.Default.KeyboardArrowRight, null)
             }
         }
-        Button(onClick = {
-            onClick(DPadInput.DOWN)
-        }) {
-            Icon(Icons.Default.KeyboardArrowDown, null)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = {
+                onClick(DPadInput.BACK)
+            }) {
+                Icon(Icons.Default.ArrowBack, null)
+            }
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = {
+                    onClick(DPadInput.DOWN)
+                }) {
+                    Icon(Icons.Default.KeyboardArrowDown, null)
+                }
+            }
         }
     }
 }
