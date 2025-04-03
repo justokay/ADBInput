@@ -19,6 +19,22 @@ object ADB {
         executeCommand(command)
     }
 
+    fun sendDeeplink(deeplink: String, appId: String, deviceId: String) {
+        if (deeplink.isEmpty() || appId.isEmpty()) return
+
+        val command = if (deviceId.isNotEmpty()) {
+            listOf(
+                "adb", "-s", deviceId, "shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-d", "\"$deeplink\"", appId
+            )
+        } else {
+            listOf(
+                "adb", "shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-d", "\"$deeplink\"", appId
+            )
+        }
+
+        executeCommand(command)
+    }
+
     fun getDevices(): Devices {
         val builder = ProcessBuilder(
             "adb", "devices"

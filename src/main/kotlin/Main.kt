@@ -60,6 +60,9 @@ fun App() {
                     },
                     onDPadClick = {
                         ADB.executeCommand(it.toCommand(), currentDeviceID)
+                    },
+                    onSendDeeplink = { deeplink, appid ->
+                        ADB.sendDeeplink(deeplink, appid, currentDeviceID)
                     }
                 )
             }
@@ -71,7 +74,8 @@ fun App() {
 fun Content(
     onDeviceSelected: (String) -> Unit,
     onSendText: (String) -> Unit,
-    onDPadClick: (DPadInput) -> Unit
+    onDPadClick: (DPadInput) -> Unit,
+    onSendDeeplink: (String, String) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize().padding(10.dp)
@@ -92,7 +96,7 @@ fun Content(
                 OutlinedTextField(
                     text,
                     onValueChange = { text = it },
-                    modifier = Modifier.height(300.dp).fillMaxWidth()
+                    modifier = Modifier.height(400.dp).fillMaxWidth()
                 )
                 Row {
                     Button(onClick = {
@@ -109,6 +113,47 @@ fun Content(
                 }
             }
             DPadControl(onDPadClick)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            DeeplinkComponent(onSendDeeplink)
+        }
+    }
+}
+
+@Composable
+fun DeeplinkComponent(
+    onSendDeeplink: (String, String) -> Unit
+) {
+    var deeplink by remember { mutableStateOf("") }
+    var appId by remember { mutableStateOf("") }
+
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        OutlinedTextField(
+            appId,
+            placeholder = {
+                Text("App id")
+            },
+            onValueChange = { appId = it },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            deeplink,
+            placeholder = {
+                Text("deeplink")
+            },
+            onValueChange = { deeplink = it },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Button(onClick = {
+            onSendDeeplink(deeplink, appId)
+        }) {
+            Text("Send")
         }
     }
 }
@@ -312,7 +357,7 @@ fun main() = application {
 @Composable
 fun ApplicationScope.AppWindow(appState: AppState) {
     val state = rememberWindowState(
-        size = DpSize(600.dp, 600.dp)
+        size = DpSize(600.dp, 900.dp)
     )
     Window(
         onCloseRequest = ::exitApplication,
@@ -336,7 +381,7 @@ fun ApplicationScope.AppWindow(appState: AppState) {
 @Composable
 fun EmulatorsWindos(appState: AppState) {
     val state = rememberWindowState(
-        size = DpSize(400.dp, 400.dp)
+
     )
     Window(title = "Emuliators", state = state, onCloseRequest = {
         appState.windows.removeLast()
